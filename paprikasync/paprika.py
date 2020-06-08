@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import gzip
 import itertools
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from operator import attrgetter
 from typing import List, Optional
 from uuid import uuid4
@@ -17,6 +19,7 @@ SYNC_RECIPE_URL = lambda uid: f'{API_BASE}/sync/recipe/{uid}/'  # noqa:E731
 SYNC_PHOTOS_URL = f'{API_BASE}/sync/photos/'
 SYNC_PHOTO_URL = lambda uid: f'{API_BASE}/sync/photo/{uid}/'  # noqa:E731
 SYNC_NOTIFY_URL = f'{API_BASE}/sync/notify/'
+SYNC_STATUs_URL = f'{API_BASE}/sync/status/'
 
 
 class InvalidToken(Exception):
@@ -25,6 +28,30 @@ class InvalidToken(Exception):
 
 class RequestFailed(Exception):
     pass
+
+
+@dataclass_json()
+@dataclass
+class SyncStatus:
+    menus: int = 0
+    photos: int = 0
+    mealtypes: int = 0
+    recipes: int = 0
+    pantry: int = 0
+    meals: int = 0
+    groceryingredients: int = 0
+    groceries: int = 0
+    groceryaisles: int = 0
+    grocerylists: int = 0
+    bookmarks: int = 0
+    menuitems: int = 0
+    categories: int = 0
+
+    def get_updated(self, prev: SyncStatus):
+        prev_dict = asdict(prev)
+        return {
+            key for key, value in asdict(self).items() if prev_dict.get(key, 0) < value
+        }
 
 
 @dataclass_json()
@@ -176,27 +203,45 @@ def check_token(token: str) -> None:
     resp.raise_for_status()
 
 
-def get_categories(token: str) -> List[Category]:
+def get_categories_raw(token: str) -> list:
     resp = requests.get(SYNC_CATEGORIES_URL, headers=_auth(token))
     resp.raise_for_status()
     data = resp.json()
-    return sorted(
-        (Category.from_dict(c) for c in data['result']), key=lambda c: c.order_flag
-    )
+    return data['result']
 
 
-def get_recipe_list(token: str) -> List[RecipeListItem]:
+def get_categories(token: str) -> List[Category]:
+    result = get_categories_raw(token)
+    return sorted((Category.from_dict(c) for c in result), key=lambda c: c.order_flag)
+
+
+def get_recipe_list_raw(token: str) -> List[RecipeListItem]:
     resp = requests.get(SYNC_RECIPES_URL, headers=_auth(token))
     resp.raise_for_status()
     data = resp.json()
-    return [RecipeListItem.from_dict(x) for x in data['result']]
+    return data['result']
 
 
-def get_recipe(token: str, uid: str) -> Recipe:
+def get_recipe_list(token: str) -> List[RecipeListItem]:
+    return [RecipeListItem.from_dict(x) for x in get_recipe_list_raw(token)]
+
+
+def get_recipe_raw(token: str, uid: str) -> dict:
     resp = requests.get(SYNC_RECIPE_URL(uid), headers=_auth(token))
     resp.raise_for_status()
     data = resp.json()
-    return Recipe.from_dict(data['result'])
+    return data['result']
+
+
+def get_recipe(token: str, uid: str) -> Recipe:
+    return Recipe.from_dict(get_recipe_raw(token, uid))
+
+
+def get_sync_status(token: str) -> dict:
+    resp = requests.get(SYNC_STATUS_URL, headers=_auth(token))
+    resp.raise_for_status()
+    data = resp.json()
+    return SyncStatus.from_dict(data['result'])
 
 
 def notify_sync(token: str) -> None:
@@ -204,13 +249,16 @@ def notify_sync(token: str) -> None:
     resp.raise_for_status()
 
 
-def get_photos(token: str) -> List[Photo]:
+def get_photos_raw(token: str) -> list:
     resp = requests.get(SYNC_PHOTOS_URL, headers=_auth(token))
     resp.raise_for_status()
     data = resp.json()
-    photos = sorted(
-        (Photo.from_dict(x) for x in data['result']), key=attrgetter('recipe_uid')
-    )
+    return data['result']
+
+
+def get_photos(token: str) -> List[Photo]:
+    result = get_photos_raw(token)
+    photos = sorted((Photo.from_dict(x) for x in result), key=attrgetter('recipe_uid'))
     photos_by_recipe = {
         recipe_uid: list(recipe_photos)
         for recipe_uid, recipe_photos in itertools.groupby(
@@ -220,8 +268,12 @@ def get_photos(token: str) -> List[Photo]:
     return photos_by_recipe
 
 
-def get_photo(token: str, uid: str) -> Photo:
+def get_photo_raw(token: str, uid: str) -> dict:
     resp = requests.get(SYNC_PHOTO_URL(uid), headers=_auth(token))
     resp.raise_for_status()
     data = resp.json()
-    return Photo.from_dict(data['result'])
+    return data['result']
+
+
+def get_photo(token: str, uid: str) -> Photo:
+    return Photo.from_dict(get_photo_raw(token, uid))
