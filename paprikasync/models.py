@@ -10,6 +10,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm.relationships import foreign
 from sqlalchemy_utils import PasswordType
 
 from . import paprika
@@ -91,7 +92,7 @@ class PaprikaModel(db.Model):
     def __repr__(self):
         clsname = type(self).__name__
         name = self.data['name']
-        return f'<{clsname}({self.uid}): {name}>'
+        return f'<{clsname}({self.id}, {self.uid}): {name}>'
 
     @classmethod
     def sync(cls, user: User) -> Tuple[set, set, set]:
@@ -152,7 +153,7 @@ class Category(PaprikaModel):
 class Photo(PaprikaModel):
     __tablename__ = 'photos'
 
-    image_data = db.Column(db.LargeBinary, nullable=False)
+    image_data = db.deferred(db.Column(db.LargeBinary, nullable=False))
 
     @classmethod
     def sync(cls, user: User) -> Tuple[set, set, set]:
@@ -179,7 +180,20 @@ class Photo(PaprikaModel):
 class Recipe(PaprikaModel):
     __tablename__ = 'recipes'
 
-    image_data = db.Column(db.LargeBinary, nullable=True)
+    image_data = db.deferred(db.Column(db.LargeBinary, nullable=True))
+
+    photos = db.relationship(
+        'Photo',
+        viewonly=True,
+        lazy='joined',
+        primaryjoin=lambda: db.and_(
+            db.cast(Recipe.data, JSONB)['uid']
+            == foreign(db.cast(Photo.data, JSONB)['recipe_uid']),
+            Recipe.user_id == Photo.user_id,
+        ),
+        backref='recipe',
+        sync_backref=False,
+    )
 
     @classmethod
     def sync(cls, user: User) -> Tuple[set, set, set]:
