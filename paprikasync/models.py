@@ -31,6 +31,10 @@ db.Model.metadata.naming_convention = {
 }
 
 
+def data_property(key):
+    return property(lambda self: self.data[key])
+
+
 class User(db.Model):
     __tablename__ = 'users'
     __table_args__ = (db.CheckConstraint('email = lower(email)', 'lowercase_email'),)
@@ -46,7 +50,9 @@ class User(db.Model):
         'paprika_sync_status', JSONB, nullable=False, default={}
     )
 
-    categories = db.relationship('Category', backref='user')
+    categories = db.relationship(
+        'Category', backref='user', order_by=lambda: Category.data['order_flag']
+    )
     photos = db.relationship('Photo', backref='user')
     recipes = db.relationship('Recipe', backref='user')
 
@@ -89,10 +95,12 @@ class PaprikaModel(db.Model):
     def uid(cls):
         return cls.data['uid'].astext
 
+    name = data_property('name')
+    in_trash = data_property('in_trash')
+
     def __repr__(self):
         clsname = type(self).__name__
-        name = self.data['name']
-        return f'<{clsname}({self.id}, {self.uid}): {name}>'
+        return f'<{clsname}({self.id}, {self.uid}): {self.name}>'
 
     @classmethod
     def sync(cls, user: User) -> Tuple[set, set, set]:
@@ -142,6 +150,10 @@ class PaprikaModel(db.Model):
 
 class Category(PaprikaModel):
     __tablename__ = 'categories'
+
+    @property
+    def children(self):
+        return [c for c in self.user.categories if c.data['parent_uid'] == self.uid]
 
     @classmethod
     def sync(cls, user: User) -> Tuple[set, set, set]:
@@ -205,14 +217,12 @@ class Recipe(PaprikaModel):
             lambda old, new: old.hash == new['hash'],
         )
         for recipe in added | updated:
-            recipe.download_photo(user.paprika_token)
+            recipe._download_photo(user.paprika_token)
         return added, updated, deleted
 
-    @property
-    def hash(self) -> str:
-        return self.data['hash']
+    hash = data_property('hash')
 
-    def download_photo(self, paprika_token: str) -> None:
+    def _download_photo(self, paprika_token: str) -> None:
         current_app.logger.info('Recipe %r has no photo', self)
         if not self.data['photo'] or not self.data['photo_url']:
             self.image_data = None
@@ -221,3 +231,6 @@ class Recipe(PaprikaModel):
         resp = requests.get(self.data['photo_url'])
         resp.raise_for_status()
         self.image_data = resp.content
+
+    def get_photo(self, id):
+        return next((p for p in self.photos if p.id == id), None)

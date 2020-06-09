@@ -1,14 +1,16 @@
+import mimetypes
 from functools import wraps
+from io import BytesIO
 from uuid import UUID
 
-from flask import Blueprint, current_app, g, jsonify, request
+from flask import Blueprint, current_app, g, jsonify, request, send_file
 from webargs import fields
 from webargs.flaskparser import use_kwargs
 from werkzeug.exceptions import HTTPException, UnprocessableEntity
 
 from . import paprika
-from .models import User, db
-from .schemas import UserSchema
+from .models import Recipe, User, db
+from .schemas import BasicRecipeSchema, CategorySchema, RecipeSchema, UserSchema
 
 api = Blueprint('api', __name__, url_prefix='/api')
 
@@ -108,3 +110,55 @@ def user_refresh_paprika():
     g.user.paprika_sync_status = new_status
     db.session.commit()
     return {x: x in todo for x in ('categories', 'recipes', 'photos')}
+
+
+@api.route('/paprika/categories/')
+@require_user
+def paprika_categories():
+    return CategorySchema(many=True).jsonify(
+        c for c in g.user.categories if c.data['parent_uid'] is None
+    )
+
+
+@api.route('/paprika/recipes/')
+@require_user
+def paprika_recipes():
+    return BasicRecipeSchema(many=True).jsonify(g.user.recipes)
+
+
+@api.route('/paprika/recipes/<int:id>/')
+@require_user
+def paprika_recipe(id):
+    recipe = Recipe.query.with_parent(g.user).filter_by(id=id).first()
+    if not recipe:
+        return jsonify(error='invalid_recipe'), 404
+    return RecipeSchema().jsonify(recipe)
+
+
+@api.route('/paprika/recipes/<int:id>/photo')
+@require_user
+def paprika_recipe_main_photo(id):
+    recipe = Recipe.query.with_parent(g.user).filter_by(id=id).first()
+    if not recipe:
+        return jsonify(error='invalid_recipe'), 404
+    if not recipe.data['photo']:
+        return jsonify(error='no_photo'), 404
+    mimetype = (
+        mimetypes.guess_type(recipe.data['photo'])[0] or 'application/octet-stream'
+    )
+    return send_file(BytesIO(recipe.image_data), mimetype=mimetype)
+
+
+@api.route('/paprika/recipes/<int:id>/photos/<int:pid>')
+@require_user
+def paprika_recipe_photo(id, pid):
+    recipe = Recipe.query.with_parent(g.user).filter_by(id=id).first()
+    if not recipe:
+        return jsonify(error='invalid_recipe'), 404
+    photo = recipe.get_photo(pid)
+    if not photo:
+        return jsonify(error='invalid_photo'), 404
+    mimetype = (
+        mimetypes.guess_type(photo.data['filename'])[0] or 'application/octet-stream'
+    )
+    return send_file(BytesIO(photo.image_data), mimetype=mimetype)
