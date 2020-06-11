@@ -1,20 +1,9 @@
 import React from 'react';
-import {Button} from 'semantic-ui-react';
-import {LoginForm} from './LoginForm';
 import {useAuth} from './util/auth';
+import {LoginForm} from './LoginForm';
+import {MainPage} from './MainPage';
 
 export const App = () => {
-  const {loggedIn, name, logout} = useAuth(true);
-  return (
-    <div className="App">
-      {loggedIn ? (
-        <>
-          Welcome, {name}.<br />
-          <Button onClick={logout}>Logout</Button>
-        </>
-      ) : (
-        <LoginForm />
-      )}
-    </div>
-  );
+  const {loggedIn} = useAuth(true);
+  return <div>{loggedIn ? <MainPage /> : <LoginForm />}</div>;
 };
