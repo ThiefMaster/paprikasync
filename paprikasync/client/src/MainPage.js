@@ -1,14 +1,14 @@
 import React from 'react';
-import {Button} from 'semantic-ui-react';
-import {useAuth} from './util/auth';
+import {Container} from 'semantic-ui-react';
+import {TopMenu} from './TopMenu';
 
 export const MainPage = () => {
-  const {name, logout} = useAuth(true);
-
   return (
     <>
-      Welcome, {name}.<br />
-      <Button onClick={logout}>Logout</Button>
+      <TopMenu />
+      <Container text style={{marginTop: '7em'}}>
+        TODO...
+      </Container>
     </>
   );
 };
