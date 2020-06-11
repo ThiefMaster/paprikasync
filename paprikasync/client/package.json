@@ -37,6 +37,8 @@
     ]
   },
   "devDependencies": {
+    "eslint": "^7.2.0",
+    "eslint-plugin-import": "^2.21.2",
     "flask-urls.macro": "^0.1.0",
     "prettier": "^2.0.5"
   },
