@@ -1,6 +1,7 @@
 from flask import Flask
 
 from .api import api
+from .img import img
 from .models import db
 from .schemas import mm
 
@@ -11,3 +12,4 @@ db.init_app(app)
 mm.init_app(app)
 
 app.register_blueprint(api)
+app.register_blueprint(img)

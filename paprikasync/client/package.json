@@ -44,7 +44,6 @@
     "lint-staged": "^10.2.9",
     "prettier": "^2.0.5"
   },
-  "proxy": "http://127.0.0.1:5000",
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged"

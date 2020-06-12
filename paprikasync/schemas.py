@@ -25,7 +25,18 @@ class CategorySchema(mm.SQLAlchemyAutoSchema):
 class BasicRecipeSchema(mm.SQLAlchemyAutoSchema):
     class Meta:
         model = Recipe
-        fields = ('id', 'name', 'in_trash')
+        fields = ('id', 'name', 'in_trash', 'photo_url')
+
+    photo_url = Function(
+        lambda r: url_for(
+            'img.paprika_recipe_main_photo',
+            id=r.id,
+            hash=r.data['photo_hash'],
+            name=r.data['photo'],
+        )
+        if r.data['photo']
+        else None
+    )
 
     @post_dump(pass_many=True)
     def sort_list(self, data, many, **kwargs):
@@ -40,7 +51,13 @@ class PhotoSchema(mm.SQLAlchemyAutoSchema):
         fields = ('id', 'data', 'url')
 
     url = Function(
-        lambda p: url_for('api.paprika_recipe_photo', id=p.recipe.id, pid=p.id)
+        lambda p: url_for(
+            'img.paprika_recipe_photo',
+            id=p.recipe.id,
+            pid=p.id,
+            hash=p.data['hash'],
+            name=p.data['filename'],
+        )
     )
 
 
@@ -50,7 +67,12 @@ class RecipeSchema(mm.SQLAlchemyAutoSchema):
         fields = ('id', 'name', 'in_trash', 'photo_url', 'photos', 'data')
 
     photo_url = Function(
-        lambda r: url_for('api.paprika_recipe_main_photo', id=r.id)
+        lambda r: url_for(
+            'img.paprika_recipe_main_photo',
+            id=r.id,
+            hash=r.data['photo_hash'],
+            name=r.data['photo'],
+        )
         if r.data['photo']
         else None
     )
