@@ -3,13 +3,14 @@ import React, {useEffect, useState} from 'react';
 import Markdown from 'react-markdown';
 import {useParams} from 'react-router-dom';
 import breaks from 'remark-breaks';
-import {Divider, Grid, Header, Icon, Image, Loader} from 'semantic-ui-react';
+import {Divider, Grid, Header, Icon, Image, Loader, Modal} from 'semantic-ui-react';
 import {fetchJSON} from './util/fetch';
 import {useRestoreScroll} from './util/router';
 
 export const Recipe = () => {
   const {id} = useParams();
   const [recipe, setRecipe] = useState(null);
+  const [modalImage, setModalImage] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -34,10 +35,11 @@ export const Recipe = () => {
         <div className="recipe-photos">
           {extraPhoto && <Image src={extraPhoto} />}
           {recipe.photos.map(p => (
-            <a key={p} href={p} target="_blank" rel="noopener noreferrer">
-              <Image src={p} />
-            </a>
+            <Image key={p} src={p} style={{cursor: 'pointer'}} onClick={() => setModalImage(p)} />
           ))}
+          <Modal open={!!modalImage} size="large" onClose={() => setModalImage(null)}>
+            <Image src={modalImage} onClick={() => setModalImage(null)} />
+          </Modal>
         </div>
       )}
       <Grid columns={3}>
