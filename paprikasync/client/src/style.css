@@ -1,5 +1,36 @@
+body {
+  overflow-y: scroll;
+}
+
 .root {
   padding-left: 2em;
   padding-top: 2em;
   padding-bottom: 5em;
+}
+
+.text-content {
+  font-size: 1.15rem;
+}
+
+.recipe-list-header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.recipe-photos {
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.recipe-photos > a,
+.recipe-photos > img {
+  margin-bottom: 1em;
+  margin-right: 1em;
+}
+
+.recipe-photos img {
+  width: 175px;
+  height: 175px;
+  object-fit: cover;
 }

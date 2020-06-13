@@ -1,4 +1,5 @@
 import React from 'react';
+import {Link} from 'react-router-dom';
 import {Container, Dropdown, Image, Menu, Popup} from 'semantic-ui-react';
 import pepper from './pepper.svg';
 import {useAuth} from './util/auth';
@@ -12,7 +13,7 @@ export const TopMenu = () => {
   return (
     <Menu fixed="top" inverted>
       <Container>
-        <Menu.Item header>
+        <Menu.Item as={Link} to="/" header>
           <Image
             size="mini"
             src={pepper}

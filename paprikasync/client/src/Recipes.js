@@ -1,15 +1,20 @@
 import flask from 'flask-urls.macro';
-import React, {useEffect, useState} from 'react';
-import {Container, Item, Loader, Message, Input, Icon} from 'semantic-ui-react';
+import React, {useEffect, useMemo, useState} from 'react';
+import {Link, Route, Switch} from 'react-router-dom';
+import {Header, Icon, Input, Item, Loader, Message} from 'semantic-ui-react';
 import placeholder from './placeholder.png';
+import {Recipe} from './Recipe';
 import {fetchJSON} from './util/fetch';
+import {useRestoreScroll} from './util/router';
 import {smartContains} from './util/string';
 
 const RecipeItem = ({recipe}) => (
   <Item>
-    <Item.Image src={recipe.photo_url || placeholder} />
+    <Item.Image as={Link} to={`/recipe/${recipe.id}`} src={recipe.photo_url || placeholder} />
     <Item.Content verticalAlign="middle">
-      <Item.Header>{recipe.name}</Item.Header>
+      <Item.Header as={Link} to={`/recipe/${recipe.id}`}>
+        {recipe.name}
+      </Item.Header>
     </Item.Content>
   </Item>
 );
@@ -24,6 +29,48 @@ const RecipeList = ({recipes}) => {
   );
 };
 
+const RecipeListContainer = ({setFilter, filter, recipes}) => {
+  const filteredRecipes = useMemo(
+    () => (recipes || []).filter(r => smartContains(r.name, filter)),
+    [filter, recipes]
+  );
+
+  useRestoreScroll();
+
+  return (
+    <>
+      <div className="recipe-list-header">
+        <Header as="h1">My recipes</Header>
+        <div>
+          <Input
+            placeholder="Search"
+            onChange={(evt, {value}) => setFilter(value)}
+            value={filter}
+            error={recipes && !!recipes.length && !filteredRecipes.length}
+            icon={
+              <Icon
+                name="x"
+                link
+                onClick={() => setFilter('')}
+                style={filter.trim() ? {} : {display: 'none'}}
+              />
+            }
+          />
+        </div>
+      </div>
+      {recipes === null ? (
+        <Loader active>Loading recipes...</Loader>
+      ) : recipes.length === 0 ? (
+        <Message content="You do not have any recipes yet." warning />
+      ) : filteredRecipes.length === 0 ? (
+        <Message content="No recipes match your filter." warning />
+      ) : (
+        <RecipeList recipes={filteredRecipes} filter={filter.trim()} />
+      )}
+    </>
+  );
+};
+
 export const Recipes = () => {
   const [recipes, setRecipes] = useState(null);
   const [filter, setFilter] = useState('');
@@ -35,35 +82,12 @@ export const Recipes = () => {
     })();
   }, []);
 
-  const filteredRecipes = (recipes || []).filter(r => smartContains(r.name, filter));
-
   return (
-    <Container text style={{marginTop: '7em', marginBottom: '2em'}}>
-      <div style={{display: 'flex', justifyContent: 'flex-end'}}>
-        <Input
-          placeholder="Search"
-          onChange={(evt, {value}) => setFilter(value)}
-          value={filter}
-          error={recipes && !!recipes.length && !filteredRecipes.length}
-          icon={
-            <Icon
-              name="x"
-              link
-              onClick={() => setFilter('')}
-              style={filter.trim() ? {} : {display: 'none'}}
-            />
-          }
-        />
-      </div>
-      {recipes === null ? (
-        <Loader active>Loading recipes...</Loader>
-      ) : recipes.length === 0 ? (
-        <Message content="You do not have any recipes yet." warning />
-      ) : filteredRecipes.length === 0 ? (
-        <Message content="No recipes match your filter." warning />
-      ) : (
-        <RecipeList recipes={filteredRecipes} filter={filter.trim()} />
-      )}
-    </Container>
+    <Switch>
+      <Route exact path="/">
+        <RecipeListContainer recipes={recipes} filter={filter} setFilter={setFilter} />
+      </Route>
+      <Route exact path="/recipe/:id" component={Recipe} />
+    </Switch>
   );
 };
