@@ -1,14 +1,12 @@
 import React from 'react';
-import {Container} from 'semantic-ui-react';
 import {TopMenu} from './TopMenu';
+import {Recipes} from './Recipes';
 
 export const MainPage = () => {
   return (
     <>
       <TopMenu />
-      <Container text style={{marginTop: '7em'}}>
-        TODO...
-      </Container>
+      <Recipes />
     </>
   );
 };
