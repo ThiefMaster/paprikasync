@@ -1,11 +1,10 @@
-import flask from 'flask-urls.macro';
 import React, {useEffect, useMemo, useState} from 'react';
 import {Link, Route, Switch} from 'react-router-dom';
 import {Header, Icon, Input, Item, Label, Loader, Message} from 'semantic-ui-react';
 import placeholder from './placeholder.png';
 import {Recipe} from './Recipe';
-import {fetchJSON} from './util/fetch';
 import {useRestoreScroll} from './util/router';
+import {useStore} from './util/store';
 import {smartContains} from './util/string';
 
 const RecipeItem = ({recipe, categories}) => (
@@ -84,30 +83,14 @@ const RecipeListContainer = ({setFilter, filter, recipes, categoryMap}) => {
   );
 };
 
-const flattenCategories = categories =>
-  categories.reduce((acc, cat) => {
-    acc[cat.uid] = cat.name;
-    return cat.children.length ? {...acc, ...flattenCategories(cat.children)} : acc;
-  }, {});
-
 export const Recipes = () => {
-  const [recipes, setRecipes] = useState(null);
-  const [categories, setCategories] = useState({});
+  const {categories, recipes, loadCategories, loadRecipes} = useStore();
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
-    (async () => {
-      const [, resp] = await fetchJSON(flask`api.paprika_recipes`());
-      setRecipes(resp);
-    })();
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      const [, resp] = await fetchJSON(flask`api.paprika_categories`());
-      setCategories(flattenCategories(resp));
-    })();
-  }, []);
+    loadCategories();
+    loadRecipes();
+  }, [loadCategories, loadRecipes]);
 
   return (
     <Switch>

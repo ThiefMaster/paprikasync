@@ -1,27 +1,21 @@
-import flask from 'flask-urls.macro';
 import React, {useState} from 'react';
 import {Link} from 'react-router-dom';
 import {Container, Dropdown, Icon, Image, Menu, Popup} from 'semantic-ui-react';
 import pepper from './pepper.svg';
 import {useAuth} from './util/auth';
-import {fetchJSON} from './util/fetch';
+import {useStore} from './util/store';
 
 export const TopMenu = () => {
   const {name, logout} = useAuth(true);
   const [syncing, setSyncing] = useState(false);
+  const {refreshPaprika} = useStore();
 
   const userOptions = [{key: name, value: name, text: name}];
   const selectedUser = name;
 
   const sync = async () => {
     setSyncing(true);
-    console.log('Starting sync');
-    const [code, resp] = await fetchJSON(flask`api.user_refresh_paprika`(), {});
-    if (code !== 200) {
-      console.log('Sync failed');
-    } else {
-      console.log('Sync finished', resp);
-    }
+    await refreshPaprika();
     setSyncing(false);
   };
 
