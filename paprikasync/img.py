@@ -1,7 +1,7 @@
 import mimetypes
 from io import BytesIO
 
-from flask import Blueprint, abort, send_file
+from flask import Blueprint, abort, request, send_file
 
 from .models import Recipe
 
@@ -18,7 +18,10 @@ def paprika_recipe_main_photo(id, hash, name):
     mimetype = (
         mimetypes.guess_type(recipe.data['photo'])[0] or 'application/octet-stream'
     )
-    return send_file(BytesIO(recipe.image_data), mimetype=mimetype)
+    rv = send_file(BytesIO(recipe.image_data), mimetype=mimetype)
+    rv.set_etag(recipe.data['photo_hash'])
+    rv.make_conditional(request)
+    return rv
 
 
 @img.route('/recipe/<int:id>/photos/<int:pid>/<hash>/<name>')
@@ -32,4 +35,7 @@ def paprika_recipe_photo(id, pid, hash, name):
     mimetype = (
         mimetypes.guess_type(photo.data['filename'])[0] or 'application/octet-stream'
     )
-    return send_file(BytesIO(photo.image_data), mimetype=mimetype)
+    rv = send_file(BytesIO(photo.image_data), mimetype=mimetype)
+    rv.set_etag(photo.data['hash'])
+    rv.make_conditional(request)
+    return rv
