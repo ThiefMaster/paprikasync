@@ -2,20 +2,11 @@ import {FORM_ERROR} from 'final-form';
 import flask from 'flask-urls.macro';
 import React from 'react';
 import {Field, Form as FinalForm} from 'react-final-form';
-import {
-  Button,
-  Form,
-  Grid,
-  Header,
-  Image,
-  Message,
-  Segment
-} from 'semantic-ui-react';
+import {Button, Form, Grid, Header, Image, Message, Segment} from 'semantic-ui-react';
 import pepper from './pepper.svg';
 import {useAuth} from './util/auth';
 import {fetchJSON} from './util/fetch';
 import {SUIInputAdapter} from './util/forms';
-
 
 export const LoginForm = () => {
   const {login, refreshing} = useAuth();

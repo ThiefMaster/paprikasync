@@ -75,9 +75,5 @@ export const useAuth = (topLevel = false) => {
 export const AuthProvider = ({children}) => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  return (
-    <AuthContext.Provider value={{...state, dispatch}}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{...state, dispatch}}>{children}</AuthContext.Provider>;
 };
