@@ -17,7 +17,7 @@ class UserSchema(mm.SQLAlchemyAutoSchema):
 class CategorySchema(mm.SQLAlchemyAutoSchema):
     class Meta:
         model = Category
-        fields = ('id', 'data', 'children')
+        fields = ('id', 'name', 'uid', 'data', 'children')
 
     children = List(Nested(lambda: CategorySchema))
 
@@ -25,7 +25,7 @@ class CategorySchema(mm.SQLAlchemyAutoSchema):
 class BasicRecipeSchema(mm.SQLAlchemyAutoSchema):
     class Meta:
         model = Recipe
-        fields = ('id', 'name', 'in_trash', 'photo_url')
+        fields = ('id', 'name', 'in_trash', 'photo_url', 'categories')
 
     photo_url = Function(
         lambda r: url_for(
@@ -37,6 +37,8 @@ class BasicRecipeSchema(mm.SQLAlchemyAutoSchema):
         if r.data['photo']
         else None
     )
+
+    categories = Function(lambda r: r.data['categories'])
 
     @post_dump(pass_many=True)
     def sort_list(self, data, many, **kwargs):

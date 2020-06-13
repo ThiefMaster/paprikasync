@@ -1,35 +1,48 @@
 import flask from 'flask-urls.macro';
 import React, {useEffect, useMemo, useState} from 'react';
 import {Link, Route, Switch} from 'react-router-dom';
-import {Header, Icon, Input, Item, Loader, Message} from 'semantic-ui-react';
+import {Header, Icon, Input, Item, Label, Loader, Message} from 'semantic-ui-react';
 import placeholder from './placeholder.png';
 import {Recipe} from './Recipe';
 import {fetchJSON} from './util/fetch';
 import {useRestoreScroll} from './util/router';
 import {smartContains} from './util/string';
 
-const RecipeItem = ({recipe}) => (
+const RecipeItem = ({recipe, categories}) => (
   <Item>
     <Item.Image as={Link} to={`/recipe/${recipe.id}`} src={recipe.photo_url || placeholder} />
     <Item.Content verticalAlign="middle">
       <Item.Header as={Link} to={`/recipe/${recipe.id}`}>
         {recipe.name}
       </Item.Header>
+      {!!categories.length && (
+        <Item.Extra>
+          {categories.map(c => (
+            <Label key={c} color="teal" circular>
+              {c}
+            </Label>
+          ))}
+        </Item.Extra>
+      )}
     </Item.Content>
   </Item>
 );
 
-const RecipeList = ({recipes}) => {
+const RecipeList = ({recipes, categoryMap}) => {
   return (
     <Item.Group divided>
       {recipes.map(r => (
-        <RecipeItem key={r.id} recipe={r} />
+        <RecipeItem
+          key={r.id}
+          recipe={r}
+          categories={r.categories.map(c => categoryMap[c]).filter(c => c)}
+        />
       ))}
     </Item.Group>
   );
 };
 
-const RecipeListContainer = ({setFilter, filter, recipes}) => {
+const RecipeListContainer = ({setFilter, filter, recipes, categoryMap}) => {
   const filteredRecipes = useMemo(
     () => (recipes || []).filter(r => smartContains(r.name, filter)),
     [filter, recipes]
@@ -65,14 +78,21 @@ const RecipeListContainer = ({setFilter, filter, recipes}) => {
       ) : filteredRecipes.length === 0 ? (
         <Message content="No recipes match your filter." warning />
       ) : (
-        <RecipeList recipes={filteredRecipes} filter={filter.trim()} />
+        <RecipeList recipes={filteredRecipes} filter={filter.trim()} categoryMap={categoryMap} />
       )}
     </>
   );
 };
 
+const flattenCategories = categories =>
+  categories.reduce((acc, cat) => {
+    acc[cat.uid] = cat.name;
+    return cat.children.length ? {...acc, ...flattenCategories(cat.children)} : acc;
+  }, {});
+
 export const Recipes = () => {
   const [recipes, setRecipes] = useState(null);
+  const [categories, setCategories] = useState({});
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
@@ -82,12 +102,26 @@ export const Recipes = () => {
     })();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      const [, resp] = await fetchJSON(flask`api.paprika_categories`());
+      setCategories(flattenCategories(resp));
+    })();
+  }, []);
+
   return (
     <Switch>
       <Route exact path="/">
-        <RecipeListContainer recipes={recipes} filter={filter} setFilter={setFilter} />
+        <RecipeListContainer
+          recipes={recipes}
+          filter={filter}
+          setFilter={setFilter}
+          categoryMap={categories}
+        />
       </Route>
-      <Route exact path="/recipe/:id" component={Recipe} />
+      <Route exact path="/recipe/:id">
+        <Recipe categoryMap={categories} />
+      </Route>
     </Switch>
   );
 };

@@ -3,11 +3,11 @@ import React, {useEffect, useState} from 'react';
 import Markdown from 'react-markdown';
 import {useParams} from 'react-router-dom';
 import breaks from 'remark-breaks';
-import {Divider, Grid, Header, Icon, Image, Loader, Modal} from 'semantic-ui-react';
+import {Divider, Grid, Header, Icon, Image, Loader, Modal, Label} from 'semantic-ui-react';
 import {fetchJSON} from './util/fetch';
 import {useRestoreScroll} from './util/router';
 
-export const Recipe = () => {
+export const Recipe = ({categoryMap}) => {
   const {id} = useParams();
   const [recipe, setRecipe] = useState(null);
   const [modalImage, setModalImage] = useState(null);
@@ -25,12 +25,21 @@ export const Recipe = () => {
     return <Loader active>Loading recipe...</Loader>;
   }
 
+  const categories = recipe.data.categories.map(c => categoryMap[c]).filter(c => c);
+
   // some recipes don't have any large photos attached, just the "embedded" one
   const extraPhoto = !recipe.data.photo_large && recipe.photo_url ? recipe.photo_url : null;
 
   return (
     <>
-      <Header as="h1">{recipe.name}</Header>
+      <Header as="h1">
+        {recipe.name}
+        {categories.map(c => (
+          <Label key={c} color="teal" circular>
+            {c}
+          </Label>
+        ))}
+      </Header>
       {(extraPhoto || !!recipe.photos.length) && (
         <div className="recipe-photos">
           {extraPhoto && <Image src={extraPhoto} />}
