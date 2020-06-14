@@ -23,16 +23,7 @@ export const TopMenu = () => {
     <Menu fixed="top" inverted>
       <Container>
         <Menu.Item as={Link} to="/" header>
-          <Image
-            size="mini"
-            src={pepper}
-            style={{
-              marginRight: '1.5em',
-              filter:
-                // black magic converting black to orange... until there's a properly-colored image
-                'invert(100%) sepia(100%) saturate(10000%) hue-rotate(300deg) saturate(1000%)',
-            }}
-          />
+          <Image size="mini" src={pepper} style={{marginRight: '1.5em'}} />
           Paprikasync
         </Menu.Item>
         <Dropdown
