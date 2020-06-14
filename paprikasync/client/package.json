@@ -40,6 +40,8 @@
     ]
   },
   "devDependencies": {
+    "eslint": "^6.6.0",
+    "eslint-plugin-import": "^2.21.2",
     "flask-urls.macro": "^0.1.0"
   },
   "husky": {
