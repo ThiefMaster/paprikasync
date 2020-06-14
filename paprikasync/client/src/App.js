@@ -5,5 +5,5 @@ import {MainPage} from './MainPage';
 
 export const App = () => {
   const {loggedIn} = useAuth(true);
-  return <div>{loggedIn ? <MainPage /> : <LoginForm />}</div>;
+  return loggedIn ? <MainPage /> : <LoginForm />;
 };
