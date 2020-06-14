@@ -3,4 +3,5 @@
 *.swp
 *.egg-info
 __pycache__/
+node_modules/
 pip-wheel-metadata/

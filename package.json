@@ -1,0 +1,31 @@
+{
+  "name": "root",
+  "private": true,
+  "scripts": {
+    "prettier": "prettier --write 'paprikasync/client/src/**/*.{js,jsx,json,scss,css}'",
+    "isort": "isort --recursive setup.py paprikasync/",
+    "black": "black setup.py paprikasync/",
+    "flake8": "flake8 paprikasync/"
+  },
+  "lint-staged": {
+    "paprikasync/client/src/**/*.{js,jsx,json,scss,css}": [
+      "prettier --write"
+    ],
+    "{paprikasync,tests}/**/*.py": [
+      "isort",
+      "black"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "devDependencies": {
+    "eslint": "^6.6.0",
+    "eslint-plugin-import": "^2.21.2",
+    "husky": "^4.2.5",
+    "lint-staged": "^10.2.10",
+    "prettier": "^2.0.5"
+  }
+}
