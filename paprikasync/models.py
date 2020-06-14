@@ -85,7 +85,7 @@ class PaprikaModel(db.Model):
 
     @declared_attr
     def user_id(cls):
-        return db.Column(db.ForeignKey(User.id))
+        return db.Column(db.ForeignKey(User.id), index=True)
 
     @hybrid_property
     def uid(self) -> str:
