@@ -4,6 +4,7 @@ from io import BytesIO
 from uuid import UUID
 
 from flask import Blueprint, current_app, g, jsonify, request, send_file
+from sqlalchemy.exc import IntegrityError
 from webargs import fields
 from webargs.flaskparser import use_kwargs
 from werkzeug.exceptions import HTTPException, UnprocessableEntity
@@ -101,12 +102,16 @@ def user_me():
 def user_refresh_paprika():
     new_status = paprika.get_sync_status(g.user.paprika_token)
     todo = new_status.get_updated(g.user.paprika_sync_status)
-    if 'categories' in todo:
-        g.user.sync_categories()
-    if 'recipes' in todo:
-        g.user.sync_recipes()
-    if 'photos' in todo:
-        g.user.sync_photos()
+    try:
+        if 'categories' in todo:
+            g.user.sync_categories()
+        if 'recipes' in todo:
+            g.user.sync_recipes()
+        if 'photos' in todo:
+            g.user.sync_photos()
+        db.session.flush()
+    except IntegrityError:
+        return jsonify(error='sync_conflict'), 409
     g.user.paprika_sync_status = new_status
     db.session.commit()
     return {x: x in todo for x in ('categories', 'recipes', 'photos')}

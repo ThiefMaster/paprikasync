@@ -80,6 +80,10 @@ class User(db.Model):
 class PaprikaModel(db.Model):
     __abstract__ = True
 
+    @declared_attr
+    def __table_args__(cls):
+        return (db.Index(None, cls.user_id, cls.uid, unique=True),)
+
     id = db.Column(db.Integer, primary_key=True)
     data = db.Column('data', JSONB, nullable=False)
 
