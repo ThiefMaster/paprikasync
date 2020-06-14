@@ -40,6 +40,7 @@ class User(db.Model):
     __table_args__ = (db.CheckConstraint('email = lower(email)', 'lowercase_email'),)
 
     id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False)
     email = db.Column(db.String, nullable=False, unique=True)
     password = db.Column(PasswordType(schemes=['argon2']), nullable=False)
     token = db.Column(

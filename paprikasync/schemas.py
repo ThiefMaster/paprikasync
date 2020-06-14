@@ -11,7 +11,7 @@ mm = Marshmallow()
 class UserSchema(mm.SQLAlchemyAutoSchema):
     class Meta:
         model = User
-        fields = ('email', 'token')
+        fields = ('name', 'email', 'token')
 
 
 class CategorySchema(mm.SQLAlchemyAutoSchema):

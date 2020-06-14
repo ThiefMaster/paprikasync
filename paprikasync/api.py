@@ -85,7 +85,12 @@ def user_login(email, password):
             current_app.logger.info('Paprika login failed: %s', error)
             return {'error': 'invalid_paprika_login', 'detail': error}, 422
         current_app.logger.info('Paprika login successful, creating local user')
-        user = User(email=email, password=password, paprika_token=paprika_token)
+        user = User(
+            name=email.split('@')[0],
+            email=email,
+            password=password,
+            paprika_token=paprika_token,
+        )
         db.session.add(user)
         db.session.commit()
     return UserSchema().jsonify(user)

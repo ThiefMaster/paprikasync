@@ -50,8 +50,8 @@ export const useAuth = (topLevel = false) => {
     (async () => {
       const [status, resp] = await fetchJSON(flask`api.user_me`());
       if (status === 200) {
-        console.log(`Refresh successful for ${resp.email}`);
-        dispatch({type: 'REFRESH', name: resp.email});
+        console.log(`Refresh successful for ${resp.email} (${resp.name})`);
+        dispatch({type: 'REFRESH', name: resp.name});
       } else {
         console.log('Refresh failed; logging out');
         dispatch({type: 'LOGOUT'});
