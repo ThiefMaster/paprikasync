@@ -1,6 +1,6 @@
 import {getToken} from './auth';
 
-export const fetchJSON = async (url, payload = null) => {
+export const fetchJSON = async (url, payload = null, method = null) => {
   const headers = {
     'Content-Type': 'application/json',
   };
@@ -12,7 +12,7 @@ export const fetchJSON = async (url, payload = null) => {
     ? {
         headers,
         body: JSON.stringify(payload),
-        method: 'POST',
+        method: method || 'POST',
       }
     : {headers, method: 'GET'};
   const resp = await fetch(url, data);

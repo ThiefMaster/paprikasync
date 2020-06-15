@@ -51,6 +51,11 @@ export const TopMenu = () => {
           />
           <Popup
             inverted
+            trigger={<Menu.Item as={Link} to="/user" icon="user" />}
+            content="User settings"
+          />
+          <Popup
+            inverted
             trigger={<Menu.Item as="a" icon="log out" onClick={logout} />}
             content="Log out"
           />

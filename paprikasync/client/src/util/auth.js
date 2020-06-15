@@ -26,6 +26,11 @@ const reducer = (state, action) => {
         refreshing: false,
         name: action.name,
       };
+    case 'RENAME':
+      return {
+        ...state,
+        name: action.name,
+      };
     case 'LOGOUT':
       localStorage.clear();
       return {
@@ -69,7 +74,12 @@ export const useAuth = (topLevel = false) => {
     dispatch({type: 'LOGOUT'});
   };
 
-  return {...state, login, logout};
+  const rename = name => {
+    console.log(`User renamed to ${name}`);
+    dispatch({type: 'RENAME', name});
+  };
+
+  return {...state, login, logout, rename};
 };
 
 export const AuthProvider = ({children}) => {

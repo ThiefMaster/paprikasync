@@ -6,10 +6,10 @@ from uuid import UUID
 from flask import Blueprint, current_app, g, jsonify, request, send_file
 from sqlalchemy.exc import IntegrityError
 from webargs import fields
-from webargs.flaskparser import use_kwargs
 from werkzeug.exceptions import HTTPException, UnprocessableEntity
 
 from . import paprika
+from .args import use_kwargs
 from .models import Recipe, User, db
 from .schemas import BasicRecipeSchema, CategorySchema, RecipeSchema, UserSchema
 
@@ -99,6 +99,16 @@ def user_login(email, password):
 @api.route('/user/me')
 @require_user
 def user_me():
+    return UserSchema().jsonify(g.user)
+
+
+@api.route('/user/me', methods=('PATCH',))
+@require_user
+@use_kwargs({'name': fields.String()}, location='json')
+def user_me_update(name=None):
+    if name is not None:
+        g.user.name = name
+    db.session.commit()
     return UserSchema().jsonify(g.user)
 
 
