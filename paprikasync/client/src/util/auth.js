@@ -7,36 +7,36 @@ const AuthContext = createContext();
 export const getToken = () => localStorage.getItem('token');
 
 const token = getToken();
-const initialState = {loggedIn: false, refreshing: !!token, name: null, token};
+const initialState = {loggedIn: false, refreshing: !!token, user: null, token};
 
 const reducer = (state, action) => {
   switch (action.type) {
     case 'LOGIN':
-      localStorage.setItem('token', action.token);
+      localStorage.setItem('token', action.user.token);
       return {
         loggedIn: true,
         refreshing: false,
-        name: action.name,
-        token: action.token,
+        user: action.user,
+        token: action.user.token,
       };
     case 'REFRESH':
       return {
         ...state,
         loggedIn: true,
         refreshing: false,
-        name: action.name,
+        user: action.user,
       };
     case 'RENAME':
       return {
         ...state,
-        name: action.name,
+        user: action.user,
       };
     case 'LOGOUT':
       localStorage.clear();
       return {
         loggedIn: false,
         refreshing: false,
-        name: null,
+        user: null,
         token: null,
       };
     default:
@@ -48,7 +48,7 @@ export const useAuth = (topLevel = false) => {
   const {dispatch, ...state} = useContext(AuthContext);
 
   useEffect(() => {
-    if (!topLevel || !state.token || state.name) {
+    if (!topLevel || !state.token || state.user) {
       return;
     }
 
@@ -56,17 +56,17 @@ export const useAuth = (topLevel = false) => {
       const [status, resp] = await fetchJSON(flask`api.user_me`());
       if (status === 200) {
         console.log(`Refresh successful for ${resp.email} (${resp.name})`);
-        dispatch({type: 'REFRESH', name: resp.name});
+        dispatch({type: 'REFRESH', user: resp});
       } else {
         console.log('Refresh failed; logging out');
         dispatch({type: 'LOGOUT'});
       }
     })();
-  }, [dispatch, topLevel, state.name, state.token]);
+  }, [dispatch, topLevel, state.user, state.token]);
 
-  const login = (name, token) => {
-    console.log(`Logging in as ${name}`);
-    dispatch({type: 'LOGIN', name, token});
+  const login = user => {
+    console.log(`Logging in as ${user.name}`);
+    dispatch({type: 'LOGIN', user});
   };
 
   const logout = () => {
@@ -74,9 +74,9 @@ export const useAuth = (topLevel = false) => {
     dispatch({type: 'LOGOUT'});
   };
 
-  const rename = name => {
-    console.log(`User renamed to ${name}`);
-    dispatch({type: 'RENAME', name});
+  const rename = user => {
+    console.log(`User renamed to ${user.name}`);
+    dispatch({type: 'RENAME', user});
   };
 
   return {...state, login, logout, rename};

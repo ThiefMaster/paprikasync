@@ -7,12 +7,15 @@ import {fetchJSON} from './util/fetch';
 import {SUIInputAdapter} from './util/forms';
 
 export const UserSettings = () => {
-  const {name, rename} = useAuth(true);
+  const {
+    user: {name},
+    rename,
+  } = useAuth(true);
 
   const handleSubmit = async data => {
     const [status, resp] = await fetchJSON(flask`api.user_me_update`(), data, 'PATCH');
     if (status === 200) {
-      rename(resp.name);
+      rename(resp);
     }
   };
 

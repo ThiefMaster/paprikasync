@@ -14,7 +14,7 @@ export const LoginForm = () => {
   const handleSubmit = async data => {
     const [status, resp] = await fetchJSON(flask`api.user_login`(), data);
     if (status === 200) {
-      login(resp.name, resp.token);
+      login(resp);
     } else {
       if (resp.error === 'invalid_password') {
         return {[FORM_ERROR]: 'Invalid password'};

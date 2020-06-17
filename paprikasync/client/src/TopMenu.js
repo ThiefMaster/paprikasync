@@ -6,7 +6,10 @@ import {useAuth} from './util/auth';
 import {useStore} from './util/store';
 
 export const TopMenu = () => {
-  const {name, logout} = useAuth(true);
+  const {
+    user: {name},
+    logout,
+  } = useAuth(true);
   const [syncing, setSyncing] = useState(false);
   const {refreshPaprika} = useStore();
 
