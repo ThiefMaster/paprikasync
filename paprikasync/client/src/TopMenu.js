@@ -36,7 +36,7 @@ export const TopMenu = () => {
           value={selectedUser}
           selectOnBlur={false}
           selectOnNavigation={false}
-          text={name.split('@')[0]}
+          text={name}
         />
         <Menu.Menu position="right">
           <Popup
