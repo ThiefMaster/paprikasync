@@ -1,7 +1,7 @@
 from flask import url_for
 from flask_marshmallow import Marshmallow
 from marshmallow import post_dump
-from webargs.fields import Function, List, Nested, Pluck
+from webargs.fields import Function, Integer, List, Nested, Pluck
 
 from .models import Category, Photo, Recipe, User
 
@@ -11,7 +11,29 @@ mm = Marshmallow()
 class UserSchema(mm.SQLAlchemyAutoSchema):
     class Meta:
         model = User
-        fields = ('name', 'email', 'token')
+        fields = ('id', 'name', 'email', 'token', 'partner_code')
+
+
+class PartnerUserSchema(mm.SQLAlchemyAutoSchema):
+    class Meta:
+        model = User
+        fields = ('id', 'name', 'recipe_count')
+
+    recipe_count = Integer()
+
+
+class PendingPartnersSchema(mm.Schema):
+    incoming = List(Nested(PartnerUserSchema, exclude=('recipe_count',)))
+    outgoing = List(Nested(PartnerUserSchema, exclude=('recipe_count',)))
+
+
+class AllPartnersSchema(mm.Schema):
+    active = Function(
+        lambda user: PartnerUserSchema(many=True).dump(user.get_active_partners())
+    )
+    pending = Function(
+        lambda user: PendingPartnersSchema().dump(user.get_pending_partners())
+    )
 
 
 class CategorySchema(mm.SQLAlchemyAutoSchema):

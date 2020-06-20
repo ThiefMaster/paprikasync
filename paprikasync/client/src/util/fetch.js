@@ -14,7 +14,7 @@ export const fetchJSON = async (url, payload = null, method = null) => {
         body: JSON.stringify(payload),
         method: method || 'POST',
       }
-    : {headers, method: 'GET'};
+    : {headers, method: method || 'GET'};
   const resp = await fetch(url, data);
   return [resp.status, await resp.json()];
 };

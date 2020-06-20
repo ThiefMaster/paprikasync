@@ -11,7 +11,7 @@ export const MainPage = () => {
     <StoreProvider>
       <Router>
         <TopMenu />
-        <Container style={{marginTop: '7em', marginBottom: '2em'}}>
+        <Container className="content-container">
           <Switch>
             <Route exact path="/user">
               <UserSettings />

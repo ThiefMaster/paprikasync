@@ -8,6 +8,11 @@ body {
   padding-bottom: 5em;
 }
 
+.content-container {
+  padding-top: 7em;
+  padding-bottom: 2em;
+}
+
 .text-content {
   font-size: 1.15rem;
 }

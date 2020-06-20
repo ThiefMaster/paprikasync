@@ -10,8 +10,16 @@ from werkzeug.exceptions import HTTPException, UnprocessableEntity
 
 from . import paprika
 from .args import use_kwargs
-from .models import Recipe, User, db
-from .schemas import BasicRecipeSchema, CategorySchema, RecipeSchema, UserSchema
+from .models import Partner, Recipe, User, db
+from .schemas import (
+    AllPartnersSchema,
+    BasicRecipeSchema,
+    CategorySchema,
+    PartnerUserSchema,
+    PendingPartnersSchema,
+    RecipeSchema,
+    UserSchema,
+)
 
 api = Blueprint('api', __name__, url_prefix='/api')
 
@@ -130,6 +138,107 @@ def user_refresh_paprika():
     g.user.paprika_sync_status = new_status
     db.session.commit()
     return {x: x in todo for x in ('categories', 'recipes', 'photos')}
+
+
+@api.route('/user/partners/active/')
+@require_user
+def user_partners_active():
+    return PartnerUserSchema(many=True).jsonify(g.user.get_active_partners())
+
+
+@api.route('/user/partners/pending/')
+@require_user
+def user_partners_pending():
+    return PendingPartnersSchema().jsonify(g.user.get_pending_partners())
+
+
+@api.route('/user/partners/pending/', methods=('POST',))
+@require_user
+@use_kwargs({'partner_code': fields.String()}, location='json')
+def user_partners_create_pending(partner_code):
+    user = User.get_by_partner_code(partner_code)
+    if not user:
+        return jsonify(error='no_such_user'), 422
+    elif user == g.user:
+        return jsonify(error='cannot_add_self'), 422
+    if partner := g.user.get_incoming_partner(user.id):
+        current_app.logger.info('Approving pending partnership request from %s', user)
+        partner.approved = True
+    elif not g.user.get_outgoing_partner(user.id):
+        current_app.logger.info('Creating new pending partnership request for %s', user)
+        g.user.partners.append(Partner(target_user=user, approved=False))
+    db.session.commit()
+    return AllPartnersSchema().jsonify(g.user)
+
+
+@api.route('/user/partners/active/<int:user_id>', methods=('DELETE',))
+@require_user
+def user_partners_delete_active(user_id):
+    found = False
+    if partner := g.user.get_incoming_partner(user_id):
+        if not partner.approved:
+            return jsonify(error='not_approved'), 400
+        current_app.logger.info(
+            'Removing partnership between %s and %s',
+            partner.source_user,
+            partner.target_user,
+        )
+        db.session.delete(partner)
+        found = True
+    if partner := g.user.get_outgoing_partner(user_id):
+        if not partner.approved:
+            return jsonify(error='not_approved'), 400
+        current_app.logger.info(
+            'Removing partnership between %s and %s',
+            partner.source_user,
+            partner.target_user,
+        )
+        db.session.delete(partner)
+        found = True
+    if not found:
+        return jsonify(error='no_such_partner'), 404
+    db.session.commit()
+    return PartnerUserSchema(many=True).jsonify(g.user.get_active_partners())
+
+
+@api.route('/user/partners/pending/<int:user_id>', methods=('DELETE',))
+@require_user
+def user_partners_delete_pending(user_id):
+    found = False
+    if partner := g.user.get_incoming_partner(user_id):
+        if partner.approved:
+            return jsonify(error='already_approved'), 400
+        current_app.logger.info(
+            'Rejecting partner request from %s', partner.source_user
+        )
+        db.session.delete(partner)
+        found = True
+    if partner := g.user.get_outgoing_partner(user_id):
+        if partner.approved:
+            return jsonify(error='already_approved'), 400
+        current_app.logger.info('Cancelling partner request to %s', partner.target_user)
+        db.session.delete(partner)
+        found = True
+    if not found:
+        return jsonify(error='no_such_partner'), 404
+    db.session.commit()
+    return PendingPartnersSchema().jsonify(g.user.get_pending_partners())
+
+
+@api.route('/user/partners/active/<int:user_id>', methods=('PUT',))
+@require_user
+def user_partners_approve_pending(user_id):
+    if not (partner := g.user.get_incoming_partner(user_id)):
+        return jsonify(error='no_such_partner'), 404
+    elif partner.approved:
+        return jsonify(error='already_approved'), 400
+    else:
+        current_app.logger.info(
+            'Accepting partner request from %s', partner.source_user
+        )
+        partner.approved = True
+    db.session.commit()
+    return AllPartnersSchema().jsonify(g.user)
 
 
 @api.route('/paprika/categories/')

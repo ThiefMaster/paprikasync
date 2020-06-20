@@ -1,16 +1,21 @@
 from __future__ import annotations
 
 import dataclasses
+import re
 from typing import Callable, Iterable, Tuple
 from uuid import uuid4
 
 import requests
 from flask import current_app
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import orm
 from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.event import listens_for
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import column_property, joinedload
 from sqlalchemy.orm.relationships import foreign
+from sqlalchemy.sql import select
 from sqlalchemy_utils import PasswordType
 
 from . import paprika
@@ -65,6 +70,23 @@ class User(db.Model):
     def paprika_sync_status(self, value: paprika.SyncStatus):
         self._paprika_sync_status = dataclasses.asdict(value)
 
+    @property
+    def partner_code(self):
+        slug = re.sub(r'[-\s]+', '-', re.sub(r'[^\w\s-]', '', self.name).strip())
+        return f'{slug}#{self.id}'
+
+    @classmethod
+    def get_by_partner_code(cls, partner_code):
+        try:
+            slug, id = partner_code.split('#', 1)
+            id = int(id)
+        except ValueError:
+            return None
+        user = cls.query.get(id)
+        if not user or user.partner_code != partner_code:
+            return None
+        return user
+
     def sync_categories(self) -> None:
         Category.sync(self)
 
@@ -74,8 +96,63 @@ class User(db.Model):
     def sync_recipes(self) -> None:
         Recipe.sync(self)
 
+    def get_active_partners(self):
+        partners = (
+            Partner.query.filter(
+                (Partner.source_user == self) | (Partner.target_user == self)
+            )
+            .filter_by(approved=True)
+            .options(joinedload('source_user'), joinedload('target_user'))
+            .all()
+        )
+        return {
+            p.source_user if p.target_user == self else p.target_user for p in partners
+        }
+
+    def get_pending_partners(self):
+        return {
+            'incoming': {p.source_user for p in self.partner_of if not p.approved},
+            'outgoing': {p.target_user for p in self.partners if not p.approved},
+        }
+
+    def get_incoming_partner(self, user_id):
+        return Partner.query.filter_by(target_user=self, source_user_id=user_id).first()
+
+    def get_outgoing_partner(self, user_id):
+        return Partner.query.filter_by(source_user=self, target_user_id=user_id).first()
+
     def __repr__(self):
         return f'<User({self.id}): {self.email}>'
+
+
+@listens_for(orm.mapper, 'after_configured', once=True)
+def _mappers_configured():
+    query = (
+        select([db.func.count(Recipe.id)])
+        .where(Recipe.user_id == User.id)
+        .correlate_except(Recipe)
+    )
+    User.recipe_count = column_property(query, deferred=True)
+
+
+class Partner(db.Model):
+    __tablename__ = 'partners'
+
+    source_user_id = db.Column(db.ForeignKey(User.id), index=True, primary_key=True)
+    target_user_id = db.Column(db.ForeignKey(User.id), index=True, primary_key=True)
+    approved = db.Column(db.Boolean, nullable=False, default=False)
+
+    source_user = db.relationship(
+        User, foreign_keys=source_user_id, lazy=False, backref='partners'
+    )
+    target_user = db.relationship(
+        User, foreign_keys=target_user_id, lazy=False, backref='partner_of'
+    )
+
+    def __repr__(self):
+        return (
+            f'<Partner({self.source_user_id}, {self.target_user_id}): {self.approved})>'
+        )
 
 
 class PaprikaModel(db.Model):
