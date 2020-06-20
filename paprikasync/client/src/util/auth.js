@@ -74,9 +74,12 @@ export const useAuth = (topLevel = false) => {
     dispatch({type: 'LOGOUT'});
   };
 
-  const rename = user => {
-    console.log(`User renamed to ${user.name}`);
-    dispatch({type: 'RENAME', user});
+  const rename = async name => {
+    const [status, resp] = await fetchJSON(flask`api.user_me_update`(), {name}, 'PATCH');
+    if (status === 200) {
+      dispatch({type: 'RENAME', user: resp});
+      console.log(`User renamed to ${resp.name}`);
+    }
   };
 
   return {...state, login, logout, rename};

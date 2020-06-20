@@ -1,9 +1,7 @@
-import flask from 'flask-urls.macro';
 import React from 'react';
 import {Field, Form as FinalForm} from 'react-final-form';
 import {Button, Form, Header} from 'semantic-ui-react';
 import {useAuth} from './util/auth';
-import {fetchJSON} from './util/fetch';
 import {SUIInputAdapter} from './util/forms';
 
 export const MyProfile = () => {
@@ -12,11 +10,8 @@ export const MyProfile = () => {
     rename,
   } = useAuth(true);
 
-  const handleSubmit = async data => {
-    const [status, resp] = await fetchJSON(flask`api.user_me_update`(), data, 'PATCH');
-    if (status === 200) {
-      rename(resp);
-    }
+  const handleSubmit = async ({name}) => {
+    await rename(name);
   };
 
   return (
