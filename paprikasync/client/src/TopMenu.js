@@ -9,7 +9,7 @@ export const TopMenu = () => {
   const {
     user: {name},
     logout,
-  } = useAuth(true);
+  } = useAuth();
   const [syncing, setSyncing] = useState(false);
   const {refreshPaprika} = useStore();
 

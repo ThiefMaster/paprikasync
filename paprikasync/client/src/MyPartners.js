@@ -129,7 +129,7 @@ const AddPartner = () => {
   const {requestPartnership} = useStore();
   const {
     user: {partner_code: partnerCode},
-  } = useAuth(true);
+  } = useAuth();
 
   const handleSubmit = async ({code}, api) => {
     const error = await requestPartnership(code);
@@ -190,7 +190,7 @@ const AddPartner = () => {
 export const MyPartners = () => {
   const {
     user: {partner_code: partnerCode},
-  } = useAuth(true);
+  } = useAuth();
 
   const {partners, pendingPartners, loadActivePartners, loadPendingPartners} = useStore();
 

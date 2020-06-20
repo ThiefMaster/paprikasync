@@ -8,7 +8,7 @@ export const MyProfile = () => {
   const {
     user: {name},
     rename,
-  } = useAuth(true);
+  } = useAuth();
 
   const handleSubmit = async ({name}) => {
     await rename(name);
