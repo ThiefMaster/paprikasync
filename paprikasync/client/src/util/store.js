@@ -5,8 +5,11 @@ import {fetchJSON} from './fetch';
 const StoreContext = createContext();
 
 const initialState = {
-  categories: {},
-  recipes: null,
+  ownCategories: {},
+  ownRecipes: null,
+  partnerCategories: {},
+  partnerRecipes: {},
+  selectedPartner: null,
   partners: [],
   pendingPartners: {incoming: [], outgoing: []},
 };
@@ -19,10 +22,28 @@ const flattenCategories = categories =>
 
 const reducer = (state, action) => {
   switch (action.type) {
-    case 'SET_CATEGORIES':
-      return {...state, categories: flattenCategories(action.categories)};
-    case 'SET_RECIPES':
-      return {...state, recipes: action.recipes};
+    case 'SET_OWN_CATEGORIES':
+      return {...state, ownCategories: flattenCategories(action.categories)};
+    case 'SET_OWN_RECIPES':
+      return {...state, ownRecipes: action.recipes};
+    case 'SET_PARTNER_CATEGORIES':
+      return {
+        ...state,
+        partnerCategories: {
+          ...state.partnerCategories,
+          [action.partner]: flattenCategories(action.categories),
+        },
+      };
+    case 'SET_PARTNER_RECIPES':
+      return {
+        ...state,
+        partnerRecipes: {
+          ...state.partnerRecipes,
+          [action.partner]: action.recipes,
+        },
+      };
+    case 'SELECT_PARTNER':
+      return {...state, selectedPartner: action.partner};
     case 'SET_ACTIVE_PARTNERS':
       return {...state, partners: action.partners};
     case 'SET_PENDING_PARTNERS':
@@ -37,19 +58,42 @@ const reducer = (state, action) => {
 export const useStore = () => {
   const {dispatch, ...state} = useContext(StoreContext);
 
-  const loadCategories = useCallback(async () => {
-    const [code, resp] = await fetchJSON(flask`api.paprika_categories`());
-    if (code === 200) {
-      dispatch({type: 'SET_CATEGORIES', categories: resp});
-    }
-  }, [dispatch]);
+  const loadCategories = useCallback(
+    async (partner = undefined) => {
+      const urlParams = partner ? {partner_id: partner} : {};
+      const [code, resp] = await fetchJSON(flask`api.paprika_categories`(urlParams));
+      if (code === 200) {
+        dispatch({
+          type: partner ? 'SET_PARTNER_CATEGORIES' : 'SET_OWN_CATEGORIES',
+          categories: resp,
+          partner,
+        });
+      }
+    },
+    [dispatch]
+  );
 
-  const loadRecipes = useCallback(async () => {
-    const [code, resp] = await fetchJSON(flask`api.paprika_recipes`());
-    if (code === 200) {
-      dispatch({type: 'SET_RECIPES', recipes: resp});
-    }
-  }, [dispatch]);
+  const loadRecipes = useCallback(
+    async (partner = undefined) => {
+      const urlParams = partner ? {partner_id: partner} : {};
+      const [code, resp] = await fetchJSON(flask`api.paprika_recipes`(urlParams));
+      if (code === 200) {
+        dispatch({
+          type: partner ? 'SET_PARTNER_RECIPES' : 'SET_OWN_RECIPES',
+          recipes: resp,
+          partner,
+        });
+      }
+    },
+    [dispatch]
+  );
+
+  const selectPartner = useCallback(
+    async partner => {
+      dispatch({type: 'SELECT_PARTNER', partner});
+    },
+    [dispatch]
+  );
 
   const loadActivePartners = useCallback(async () => {
     const [code, resp] = await fetchJSON(flask`api.user_partners_active`());
@@ -134,9 +178,22 @@ export const useStore = () => {
     }
   }, [loadCategories, loadRecipes]);
 
+  const categories = state.selectedPartner
+    ? state.partnerCategories[state.selectedPartner] || {}
+    : state.ownCategories;
+
+  const recipes = state.selectedPartner
+    ? state.partnerRecipes[state.selectedPartner] || null
+    : state.ownRecipes;
+
+  const selectedPartnerName = state.selectedPartner
+    ? state.partners.find(p => p.id === state.selectedPartner).name
+    : null;
+
   return {
     loadCategories,
     loadRecipes,
+    selectPartner,
     loadActivePartners,
     loadPendingPartners,
     requestPartnership,
@@ -145,6 +202,9 @@ export const useStore = () => {
     deletePendingPartner,
     refreshPaprika,
     ...state,
+    categories,
+    recipes,
+    selectedPartnerName,
   };
 };
 

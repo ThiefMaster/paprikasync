@@ -7,17 +7,22 @@ import {Divider, Grid, Header, Icon, Image, Loader, Modal, Label} from 'semantic
 import {fetchJSON} from './util/fetch';
 import {useRestoreScroll} from './util/router';
 
-export const Recipe = ({categoryMap}) => {
+export const Recipe = ({categoryMap, partner}) => {
   const {id} = useParams();
   const [recipe, setRecipe] = useState(null);
   const [modalImage, setModalImage] = useState(null);
 
   useEffect(() => {
     (async () => {
-      const [, resp] = await fetchJSON(flask`api.paprika_recipe`({id}));
+      const urlParams = {id};
+      if (partner) {
+        urlParams.partner_id = partner;
+      }
+
+      const [, resp] = await fetchJSON(flask`api.paprika_recipe`(urlParams));
       setRecipe(resp);
     })();
-  }, [id]);
+  }, [id, partner]);
 
   useRestoreScroll(recipe !== null);
 

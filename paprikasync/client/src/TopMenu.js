@@ -1,4 +1,5 @@
-import React, {useState} from 'react';
+import _ from 'lodash';
+import React, {useState, useEffect} from 'react';
 import {Link} from 'react-router-dom';
 import {Container, Dropdown, Icon, Image, Menu, Popup} from 'semantic-ui-react';
 import pepper from './pepper.svg';
@@ -11,10 +12,32 @@ export const TopMenu = () => {
     logout,
   } = useAuth();
   const [syncing, setSyncing] = useState(false);
-  const {refreshPaprika} = useStore();
+  const {
+    refreshPaprika,
+    loadActivePartners,
+    selectPartner,
+    partners,
+    selectedPartner,
+    selectedPartnerName,
+  } = useStore();
 
-  const userOptions = [{key: name, value: name, text: name}];
-  const selectedUser = name;
+  useEffect(() => {
+    loadActivePartners();
+  }, [loadActivePartners]);
+
+  const userOptions = [
+    {
+      key: 'self',
+      value: null,
+      text: (
+        <>
+          {name} <em>(that's you)</em>
+        </>
+      ),
+    },
+    ..._.sortBy(partners, 'name').map(p => ({key: p.id, value: p.id, text: p.name})),
+  ];
+  const selectedName = selectedPartner ? selectedPartnerName : name;
 
   const sync = async () => {
     setSyncing(true);
@@ -33,10 +56,11 @@ export const TopMenu = () => {
           item
           simple
           options={userOptions}
-          value={selectedUser}
+          value={selectedPartner}
           selectOnBlur={false}
           selectOnNavigation={false}
-          text={name}
+          text={selectedName}
+          onChange={(evt, {value}) => selectPartner(value)}
         />
         <Menu.Menu position="right">
           <Popup

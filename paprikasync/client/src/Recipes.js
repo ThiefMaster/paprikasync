@@ -41,7 +41,7 @@ const RecipeList = ({recipes, categoryMap}) => {
   );
 };
 
-const RecipeListContainer = ({setFilter, filter, recipes, categoryMap}) => {
+const RecipeListContainer = ({setFilter, filter, recipes, categoryMap, partnerName}) => {
   const filteredRecipes = useMemo(
     () => (recipes || []).filter(r => smartContains(r.name, filter)),
     [filter, recipes]
@@ -52,7 +52,7 @@ const RecipeListContainer = ({setFilter, filter, recipes, categoryMap}) => {
   return (
     <>
       <div className="recipe-list-header">
-        <Header as="h1">My recipes</Header>
+        <Header as="h1">{partnerName ? `Recipes of ${partnerName}` : 'My recipes'}</Header>
         <div>
           <Input
             placeholder="Search"
@@ -73,7 +73,14 @@ const RecipeListContainer = ({setFilter, filter, recipes, categoryMap}) => {
       {recipes === null ? (
         <Loader active>Loading recipes...</Loader>
       ) : recipes.length === 0 ? (
-        <Message content="You do not have any recipes yet." warning />
+        <Message
+          content={
+            partnerName
+              ? `${partnerName} does not have any recipes yet.`
+              : 'You do not have any recipes yet.'
+          }
+          warning
+        />
       ) : filteredRecipes.length === 0 ? (
         <Message content="No recipes match your filter." warning />
       ) : (
@@ -84,13 +91,20 @@ const RecipeListContainer = ({setFilter, filter, recipes, categoryMap}) => {
 };
 
 export const Recipes = () => {
-  const {categories, recipes, loadCategories, loadRecipes} = useStore();
+  const {
+    categories,
+    recipes,
+    selectedPartner,
+    selectedPartnerName,
+    loadCategories,
+    loadRecipes,
+  } = useStore();
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
-    loadCategories();
-    loadRecipes();
-  }, [loadCategories, loadRecipes]);
+    loadCategories(selectedPartner);
+    loadRecipes(selectedPartner);
+  }, [loadCategories, loadRecipes, selectedPartner]);
 
   return (
     <Switch>
@@ -100,10 +114,11 @@ export const Recipes = () => {
           filter={filter}
           setFilter={setFilter}
           categoryMap={categories}
+          partnerName={selectedPartnerName}
         />
       </Route>
       <Route exact path="/recipe/:id">
-        <Recipe categoryMap={categories} />
+        <Recipe categoryMap={categories} partner={selectedPartner} />
       </Route>
     </Switch>
   );

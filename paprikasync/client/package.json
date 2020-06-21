@@ -8,6 +8,7 @@
     "@testing-library/user-event": "^7.2.1",
     "final-form": "^4.20.0",
     "flask-urls": "^0.2.0",
+    "lodash": "^4.17.15",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-final-form": "^6.5.0",
