@@ -1,6 +1,8 @@
 import flask from 'flask-urls.macro';
-import React, {createContext, useContext, useReducer, useCallback} from 'react';
+import React, {createContext, useCallback, useContext, useReducer} from 'react';
+import {useHistory} from 'react-router-dom';
 import {fetchJSON} from './fetch';
+import {useNumericParam} from './router';
 
 const StoreContext = createContext();
 
@@ -9,7 +11,6 @@ const initialState = {
   ownRecipes: null,
   partnerCategories: {},
   partnerRecipes: {},
-  selectedPartner: null,
   partners: [],
   pendingPartners: {incoming: [], outgoing: []},
 };
@@ -42,8 +43,6 @@ const reducer = (state, action) => {
           [action.partner]: action.recipes,
         },
       };
-    case 'SELECT_PARTNER':
-      return {...state, selectedPartner: action.partner};
     case 'SET_ACTIVE_PARTNERS':
       return {...state, partners: action.partners};
     case 'SET_PENDING_PARTNERS':
@@ -57,6 +56,8 @@ const reducer = (state, action) => {
 
 export const useStore = () => {
   const {dispatch, ...state} = useContext(StoreContext);
+  const history = useHistory();
+  const selectedPartner = useNumericParam('partnerId');
 
   const loadCategories = useCallback(
     async (partner = undefined) => {
@@ -89,10 +90,13 @@ export const useStore = () => {
   );
 
   const selectPartner = useCallback(
-    async partner => {
-      dispatch({type: 'SELECT_PARTNER', partner});
+    partner => {
+      const target = partner ? `/partner/${partner}/recipes/` : '/recipes/';
+      if (history.location.pathname !== target) {
+        history.push(target);
+      }
     },
-    [dispatch]
+    [history]
   );
 
   const loadActivePartners = useCallback(async () => {
@@ -178,16 +182,16 @@ export const useStore = () => {
     }
   }, [loadCategories, loadRecipes]);
 
-  const categories = state.selectedPartner
-    ? state.partnerCategories[state.selectedPartner] || {}
+  const categories = selectedPartner
+    ? state.partnerCategories[selectedPartner] || {}
     : state.ownCategories;
 
-  const recipes = state.selectedPartner
-    ? state.partnerRecipes[state.selectedPartner] || null
+  const recipes = selectedPartner
+    ? state.partnerRecipes[selectedPartner] || null
     : state.ownRecipes;
 
-  const selectedPartnerName = state.selectedPartner
-    ? state.partners.find(p => p.id === state.selectedPartner).name
+  const selectedPartnerName = selectedPartner
+    ? (state.partners.find(p => p.id === selectedPartner) || {}).name
     : null;
 
   return {
@@ -204,6 +208,7 @@ export const useStore = () => {
     ...state,
     categories,
     recipes,
+    selectedPartner,
     selectedPartnerName,
   };
 };

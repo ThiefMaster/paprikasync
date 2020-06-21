@@ -17,3 +17,7 @@ export const smartContains = (haystack, needle) => {
   // require all words to appear, but not necessarily in order
   return normNeedle.split(/\s+/).every(x => normHaystack.includes(x));
 };
+
+export const joinPaths = (base, path) => {
+  return base.charAt(base.length - 1) === '/' ? base.slice(0, -1) + path : base + '/' + path;
+};

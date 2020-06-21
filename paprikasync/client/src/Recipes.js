@@ -1,17 +1,21 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {Link, Route, Switch} from 'react-router-dom';
+import {Link, Route, Switch, useRouteMatch} from 'react-router-dom';
 import {Header, Icon, Input, Item, Label, Loader, Message} from 'semantic-ui-react';
 import placeholder from './placeholder.png';
 import {Recipe} from './Recipe';
 import {useRestoreScroll} from './util/router';
 import {useStore} from './util/store';
-import {smartContains} from './util/string';
+import {joinPaths, smartContains} from './util/string';
 
-const RecipeItem = ({recipe, categories}) => (
+const RecipeItem = ({recipe, categories, url}) => (
   <Item>
-    <Item.Image as={Link} to={`/recipe/${recipe.id}`} src={recipe.photo_url || placeholder} />
+    <Item.Image
+      as={Link}
+      to={joinPaths(url, `/recipe/${recipe.id}`)}
+      src={recipe.photo_url || placeholder}
+    />
     <Item.Content verticalAlign="middle">
-      <Item.Header as={Link} to={`/recipe/${recipe.id}`}>
+      <Item.Header as={Link} to={joinPaths(url, `/recipe/${recipe.id}`)}>
         {recipe.name}
       </Item.Header>
       {!!categories.length && (
@@ -27,7 +31,7 @@ const RecipeItem = ({recipe, categories}) => (
   </Item>
 );
 
-const RecipeList = ({recipes, categoryMap}) => {
+const RecipeList = ({recipes, categoryMap, url}) => {
   return (
     <Item.Group divided>
       {recipes.map(r => (
@@ -35,13 +39,14 @@ const RecipeList = ({recipes, categoryMap}) => {
           key={r.id}
           recipe={r}
           categories={r.categories.map(c => categoryMap[c]).filter(c => c)}
+          url={url}
         />
       ))}
     </Item.Group>
   );
 };
 
-const RecipeListContainer = ({setFilter, filter, recipes, categoryMap, partnerName}) => {
+const RecipeListContainer = ({setFilter, filter, recipes, categoryMap, partnerName, url}) => {
   const filteredRecipes = useMemo(
     () => (recipes || []).filter(r => smartContains(r.name, filter)),
     [filter, recipes]
@@ -84,7 +89,12 @@ const RecipeListContainer = ({setFilter, filter, recipes, categoryMap, partnerNa
       ) : filteredRecipes.length === 0 ? (
         <Message content="No recipes match your filter." warning />
       ) : (
-        <RecipeList recipes={filteredRecipes} filter={filter.trim()} categoryMap={categoryMap} />
+        <RecipeList
+          recipes={filteredRecipes}
+          filter={filter.trim()}
+          categoryMap={categoryMap}
+          url={url}
+        />
       )}
     </>
   );
@@ -100,6 +110,7 @@ export const Recipes = () => {
     loadRecipes,
   } = useStore();
   const [filter, setFilter] = useState('');
+  const {path, url} = useRouteMatch();
 
   useEffect(() => {
     loadCategories(selectedPartner);
@@ -108,16 +119,17 @@ export const Recipes = () => {
 
   return (
     <Switch>
-      <Route exact path="/">
+      <Route exact path={path}>
         <RecipeListContainer
           recipes={recipes}
           filter={filter}
           setFilter={setFilter}
           categoryMap={categories}
           partnerName={selectedPartnerName}
+          url={url}
         />
       </Route>
-      <Route exact path="/recipe/:id">
+      <Route exact path={joinPaths(path, '/recipe/:id')}>
         <Recipe categoryMap={categories} partner={selectedPartner} />
       </Route>
     </Switch>

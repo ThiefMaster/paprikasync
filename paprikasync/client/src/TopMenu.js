@@ -34,8 +34,14 @@ export const TopMenu = () => {
           {name} <em>(that's you)</em>
         </>
       ),
+      onClick: () => selectPartner(null),
     },
-    ..._.sortBy(partners, 'name').map(p => ({key: p.id, value: p.id, text: p.name})),
+    ..._.sortBy(partners, 'name').map(p => ({
+      key: p.id,
+      value: p.id,
+      text: p.name,
+      onClick: () => selectPartner(p.id),
+    })),
   ];
   const selectedName = selectedPartner ? selectedPartnerName : name;
 
