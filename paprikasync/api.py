@@ -70,6 +70,22 @@ def require_user(fn):
     return wrapper
 
 
+def allow_partner(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            partner_id = kwargs.pop('partner_id')
+        except KeyError:
+            kwargs['user'] = g.user
+        else:
+            if not (user := g.user.get_active_partner(partner_id)):
+                return jsonify(error='no_such_partner'), 404
+            kwargs['user'] = user
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+
 @api.route('/user/login', methods=('POST',))
 @use_kwargs(
     {'email': fields.String(required=True), 'password': fields.String(required=True)},
@@ -242,32 +258,40 @@ def user_partners_approve_pending(user_id):
 
 
 @api.route('/paprika/categories/')
+@api.route('/user/<int:partner_id>/paprika/categories/')
 @require_user
-def paprika_categories():
+@allow_partner
+def paprika_categories(user):
     return CategorySchema(many=True).jsonify(
-        c for c in g.user.categories if c.data['parent_uid'] is None
+        c for c in user.categories if c.data['parent_uid'] is None
     )
 
 
 @api.route('/paprika/recipes/')
+@api.route('/user/<int:partner_id>/paprika/recipes/')
 @require_user
-def paprika_recipes():
-    return BasicRecipeSchema(many=True).jsonify(g.user.recipes)
+@allow_partner
+def paprika_recipes(user):
+    return BasicRecipeSchema(many=True).jsonify(user.recipes)
 
 
 @api.route('/paprika/recipes/<int:id>/')
+@api.route('/user/<int:partner_id>/paprika/recipes/<int:id>/')
 @require_user
-def paprika_recipe(id):
-    recipe = Recipe.query.with_parent(g.user).filter_by(id=id).first()
+@allow_partner
+def paprika_recipe(user, id):
+    recipe = Recipe.query.with_parent(user).filter_by(id=id).first()
     if not recipe:
         return jsonify(error='invalid_recipe'), 404
     return RecipeSchema().jsonify(recipe)
 
 
 @api.route('/paprika/recipes/<int:id>/photo')
+@api.route('/user/<int:partner_id>/paprika/recipes/<int:id>/photo')
 @require_user
-def paprika_recipe_main_photo(id):
-    recipe = Recipe.query.with_parent(g.user).filter_by(id=id).first()
+@allow_partner
+def paprika_recipe_main_photo(user, id):
+    recipe = Recipe.query.with_parent(user).filter_by(id=id).first()
     if not recipe:
         return jsonify(error='invalid_recipe'), 404
     if not recipe.data['photo']:
@@ -279,9 +303,11 @@ def paprika_recipe_main_photo(id):
 
 
 @api.route('/paprika/recipes/<int:id>/photos/<int:pid>')
+@api.route('/user/<int:partner_id>/paprika/recipes/<int:id>/photos/<int:pid>')
 @require_user
-def paprika_recipe_photo(id, pid):
-    recipe = Recipe.query.with_parent(g.user).filter_by(id=id).first()
+@allow_partner
+def paprika_recipe_photo(user, id, pid):
+    recipe = Recipe.query.with_parent(user).filter_by(id=id).first()
     if not recipe:
         return jsonify(error='invalid_recipe'), 404
     photo = recipe.get_photo(pid)

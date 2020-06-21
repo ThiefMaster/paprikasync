@@ -109,6 +109,9 @@ class User(db.Model):
             p.source_user if p.target_user == self else p.target_user for p in partners
         }
 
+    def get_active_partner(self, user_id):
+        return next((u for u in self.get_active_partners() if u.id == user_id), None)
+
     def get_pending_partners(self):
         return {
             'incoming': {p.source_user for p in self.partner_of if not p.approved},
