@@ -268,7 +268,8 @@ class Photo(PaprikaModel):
             current_app.logger.warning(
                 'Photo data changed during sync: %r != %r', self.data, data
             )
-            self.data = data
+            if 'uid' in data:
+                self.data = data
         resp = requests.get(photo_url)
         resp.raise_for_status()
         self.image_data = resp.content
